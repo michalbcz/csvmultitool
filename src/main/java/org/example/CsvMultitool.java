@@ -101,11 +101,11 @@ public class CsvMultitool {
                 writeSheetData(sheet, csvWriter);
             }
         } else {
-            // Write to stdout
-            Writer writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
-            try (CsvWriter csvWriter = CsvWriter.builder().build(writer)) {
-                writeSheetData(sheet, csvWriter);
-            }
+            // Write to stdout - don't close stdout
+            OutputStreamWriter writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
+            CsvWriter csvWriter = CsvWriter.builder().build(writer);
+            writeSheetData(sheet, csvWriter);
+            csvWriter.flush();
         }
     }
     
