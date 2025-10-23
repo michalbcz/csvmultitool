@@ -1,6 +1,6 @@
 package org.example;
 
-import com.monitorjbl.xlsx.StreamingReader;
+import de.siegmar.fastcsv.writer.CsvWriter;
 import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFRequest;
@@ -8,14 +8,14 @@ import org.apache.poi.hssf.record.*;
 import org.apache.poi.hssf.record.Record;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.util.IOUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 
 
@@ -72,9 +72,9 @@ public class CsvMultitool implements HSSFListener {
         }
     }
     /**
-     * Read an excel file and spit out what we find.
+     * Read an excel file and convert a sheet to CSV.
      *
-     * @param args      Expect one argument that is the file to read.
+     * @param args      Arguments: <file-path> [sheet-name-or-index] [output-file]
      * @throws IOException  When there is an error processing the file.
      */
     public static void main(String[] args) throws IOException
@@ -82,34 +82,51 @@ public class CsvMultitool implements HSSFListener {
         IOUtils.setByteArrayMaxOverride(500_000_000);
 
         if (args.length < 1) {
-            println("Usage: <file-path>");
+            println("Usage: <file-path> [sheet-name-or-index] [output-file]");
+            println("  file-path: Path to the Excel file");
+            println("  sheet-name-or-index: (Optional) Sheet name or 0-based index. If not provided, lists all sheets.");
+            println("  output-file: (Optional) Output CSV file path. If not provided, writes to stdout.");
+            return;
         }
 
         String filePath = args[0];
+        String sheetIdentifier = args.length > 1 ? args[1] : null;
+        String outputFile = args.length > 2 ? args[2] : null;
+        
         File file = new File(filePath);
         FileMagic fileMagic = FileMagic.valueOf(file);
 
         switch (fileMagic) {
-            case OLE2 -> processHssfExcel97(file);
-            case OOXML -> processOoxmlExcel2003(file);
+            case OLE2 -> processHssfExcel97(file, sheetIdentifier, outputFile);
+            case OOXML -> processOoxmlExcel2003(file, sheetIdentifier, outputFile);
             default -> println("Unsupported file type: " + fileMagic.name());
         }
     }
 
-    private static void processOoxmlExcel2003(File file) {
-
-        Workbook workbook = StreamingReader.builder()
-                .rowCacheSize(100)    // number of rows to keep in memory (defaults to 10)
-                .bufferSize(4096)     // buffer size to use when reading InputStream to file (defaults to 1024)
-                .open(file);            // InputStream or File for XLSX file (required)
-
-        for (Sheet sheet : workbook){
-           println(sheet.getSheetName());
-//            for (Row r : sheet) {
-//                for (Cell c : r) {
-//                    System.out.println(c.getStringCellValue());
-//                }
-//            }
+    private static void processOoxmlExcel2003(File file, String sheetIdentifier, String outputFile) throws IOException {
+        
+        // Use the full Apache POI API
+        try (FileInputStream fis = new FileInputStream(file);
+             org.apache.poi.xssf.usermodel.XSSFWorkbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
+            
+            // If no sheet identifier is provided, list all sheets
+            if (sheetIdentifier == null) {
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    println(workbook.getSheetName(i));
+                }
+                return;
+            }
+            
+            // Find the target sheet by name or index
+            Sheet targetSheet = findSheet(workbook, sheetIdentifier);
+            
+            if (targetSheet == null) {
+                println("Sheet not found: " + sheetIdentifier);
+                return;
+            }
+            
+            // Convert sheet to CSV
+            convertSheetToCsv(targetSheet, outputFile);
         }
     }
 
@@ -117,28 +134,108 @@ public class CsvMultitool implements HSSFListener {
         System.out.println(text);
     }
 
-    private static void processHssfExcel97(File file) throws IOException {
-        // create a new file input stream with the input file specified
-        // at the command line
-        FileInputStream fin = new FileInputStream(file);
-        // create a new org.apache.poi.poifs.filesystem.Filesystem
-        POIFSFileSystem poifs = new POIFSFileSystem(fin);
-        // get the Workbook (excel part) stream in a InputStream
-        InputStream din = poifs.createDocumentInputStream("Workbook");
-        // construct out HSSFRequest object
-        HSSFRequest req = new HSSFRequest();
-        // lazy listen for ALL records with the listener shown above
-        req.addListener((Record record) -> {
-            System.out.println(((BoundSheetRecord) record).getSheetname());
-        }, BoundSheetRecord.sid);
-        // create our event factory
-        HSSFEventFactory factory = new HSSFEventFactory();
-        // process our events based on the document input stream
-        factory.processEvents(req, din);
-        // once all the events are processed close our file input stream
-        fin.close();
-        // and our document input stream (don't want to leak these!)
-        din.close();
+    private static Sheet findSheet(Workbook workbook, String sheetIdentifier) {
+        // Try to parse as an integer (0-based index)
+        try {
+            int sheetIndex = Integer.parseInt(sheetIdentifier);
+            if (sheetIndex >= 0 && sheetIndex < workbook.getNumberOfSheets()) {
+                return workbook.getSheetAt(sheetIndex);
+            }
+        } catch (NumberFormatException e) {
+            // Not an integer, try as sheet name
+        }
+        
+        // Try to find by name
+        return workbook.getSheet(sheetIdentifier);
+    }
+    
+    private static void convertSheetToCsv(Sheet sheet, String outputFile) throws IOException {
+        Writer writer;
+        
+        if (outputFile != null) {
+            writer = new FileWriter(outputFile, StandardCharsets.UTF_8);
+        } else {
+            writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
+        }
+        
+        try (CsvWriter csvWriter = CsvWriter.builder().build(writer)) {
+            for (Row row : sheet) {
+                List<String> values = new ArrayList<>();
+                
+                // Get the last cell number to ensure we write all columns
+                int lastCellNum = row.getLastCellNum();
+                
+                for (int cellIndex = 0; cellIndex < lastCellNum; cellIndex++) {
+                    Cell cell = row.getCell(cellIndex);
+                    values.add(getCellValueAsString(cell));
+                }
+                
+                csvWriter.writeRecord(values);
+            }
+        }
+        
+        if (outputFile != null) {
+            writer.close();
+        }
+    }
+    
+    private static String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                }
+                return String.valueOf(cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return cell.getStringCellValue();
+                } catch (IllegalStateException e) {
+                    try {
+                        return String.valueOf(cell.getNumericCellValue());
+                    } catch (IllegalStateException e2) {
+                        return cell.getCellFormula();
+                    }
+                }
+            case BLANK:
+                return "";
+            default:
+                return "";
+        }
+    }
+
+    private static void processHssfExcel97(File file, String sheetIdentifier, String outputFile) throws IOException {
+        // For Excel 97, we need to use the full POI library to properly convert sheets
+        
+        try (FileInputStream fis = new FileInputStream(file);
+             org.apache.poi.hssf.usermodel.HSSFWorkbook workbook = new org.apache.poi.hssf.usermodel.HSSFWorkbook(fis)) {
+            
+            // If no sheet identifier is provided, list all sheets
+            if (sheetIdentifier == null) {
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    println(workbook.getSheetName(i));
+                }
+                return;
+            }
+            
+            // Find the target sheet by name or index
+            Sheet targetSheet = findSheet(workbook, sheetIdentifier);
+            
+            if (targetSheet == null) {
+                println("Sheet not found: " + sheetIdentifier);
+                return;
+            }
+            
+            // Convert sheet to CSV
+            convertSheetToCsv(targetSheet, outputFile);
+        }
     }
 
 }
