@@ -120,8 +120,46 @@ public class CsvMultitool {
         }
         
         @Override
+        public void write(int c) throws IOException {
+            delegate.write(c);
+        }
+        
+        @Override
+        public void write(char[] cbuf) throws IOException {
+            delegate.write(cbuf);
+        }
+        
+        @Override
         public void write(char[] cbuf, int off, int len) throws IOException {
             delegate.write(cbuf, off, len);
+        }
+        
+        @Override
+        public void write(String str) throws IOException {
+            delegate.write(str);
+        }
+        
+        @Override
+        public void write(String str, int off, int len) throws IOException {
+            delegate.write(str, off, len);
+        }
+        
+        @Override
+        public Writer append(CharSequence csq) throws IOException {
+            delegate.append(csq);
+            return this;
+        }
+        
+        @Override
+        public Writer append(CharSequence csq, int start, int end) throws IOException {
+            delegate.append(csq, start, end);
+            return this;
+        }
+        
+        @Override
+        public Writer append(char c) throws IOException {
+            delegate.append(c);
+            return this;
         }
         
         @Override
