@@ -7,20 +7,17 @@ There exists two webs for that:
 1. prijmeni.cz
 2. kdejsme.cz
 
-Then I was curious what is the source of data and why there is stated that data are from 2016.
+Then I was curious what is the source of the data and why there is stated that data are from 2016.
 
-Data came from [Czech Minstry of Interior ](https://web.archive.org/web/20180210214901/https://www.mvcr.cz/clanek/cetnost-jmen-a-prijmeni.aspx)
-Past tense because it was considered as a violence of privacy to export those kind of data to public.
+Data came from [Czech Minstry of Interior ](https://web.archive.org/web/20180210214901/https://www.mvcr.cz/clanek/cetnost-jmen-a-prijmeni.aspx).
+Past tense because it was considered that such data are violation of privacy (GDPR).
 
-Thanks god for archive.org which archives even files (together it has around 30MBs). 
-Have to send them some money.
+Thanks god for archive.org which archives even files (together it has around 30MBs). Incredible, since then I am their supporter.
 
-Data are zipped Excel97 (M$ binary proprietary format) when unzipped they have
-like 450 MB. Data are separated by sheets because in Excel97 sheets have limit of maximum number of rows
+Data are zipped Excel97 (M$ binary proprietary format) files. Unzipped size is ~450 MB. Data are separated by sheets because in Excel97 sheets have limit of maximum number of rows
 2^16 (65536) rows.
 
-I want to just easily convert it to CSV. Well it is well known practice so 
-there is this cool tool called https://csvkit.readthedocs.io/en/latest/
+I wanted to just easily convert it to CSV. I found recommended tool for that - https://csvkit.readthedocs.io/en/latest/
 
 Let's list all the sheet names:
 ```
