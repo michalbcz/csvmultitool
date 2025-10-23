@@ -101,11 +101,38 @@ public class CsvMultitool {
                 writeSheetData(sheet, csvWriter);
             }
         } else {
-            // Write to stdout - don't close stdout
-            OutputStreamWriter writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
-            CsvWriter csvWriter = CsvWriter.builder().build(writer);
-            writeSheetData(sheet, csvWriter);
-            csvWriter.flush();
+            // Write to stdout - use a non-closing wrapper to avoid closing System.out
+            try (Writer writer = new NonClosingWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
+                 CsvWriter csvWriter = CsvWriter.builder().build(writer)) {
+                writeSheetData(sheet, csvWriter);
+            }
+        }
+    }
+    
+    /**
+     * Wrapper that delegates all operations except close() to prevent closing the underlying stream
+     */
+    private static class NonClosingWriter extends Writer {
+        private final Writer delegate;
+        
+        public NonClosingWriter(Writer delegate) {
+            this.delegate = delegate;
+        }
+        
+        @Override
+        public void write(char[] cbuf, int off, int len) throws IOException {
+            delegate.write(cbuf, off, len);
+        }
+        
+        @Override
+        public void flush() throws IOException {
+            delegate.flush();
+        }
+        
+        @Override
+        public void close() throws IOException {
+            // Don't close the underlying stream, just flush
+            delegate.flush();
         }
     }
     
