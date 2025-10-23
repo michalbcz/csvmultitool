@@ -1,11 +1,6 @@
 package org.example;
 
 import de.siegmar.fastcsv.writer.CsvWriter;
-import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
-import org.apache.poi.hssf.eventusermodel.HSSFListener;
-import org.apache.poi.hssf.eventusermodel.HSSFRequest;
-import org.apache.poi.hssf.record.*;
-import org.apache.poi.hssf.record.Record;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.*;
@@ -13,64 +8,12 @@ import org.apache.poi.util.IOUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 
 
-public class CsvMultitool implements HSSFListener {
-
-    private SSTRecord sstrec;
-    /**
-     * This method listens for incoming records and handles them as required.
-     * @param record    The record that was found while reading.
-     */
-    public void processRecord(Record record)
-    {
-        switch (record.getSid())
-        {
-            // the BOFRecord can represent either the beginning of a sheet or the workbook
-            case BOFRecord.sid:
-                BOFRecord bof = (BOFRecord) record;
-                if (bof.getType() == bof.TYPE_WORKBOOK)
-                {
-                    System.out.println("Encountered workbook");
-                    // assigned to the class level member
-                } else if (bof.getType() == bof.TYPE_WORKSHEET)
-                {
-                    System.out.println("Encountered sheet reference");
-                }
-                break;
-            case BoundSheetRecord.sid:
-                BoundSheetRecord bsr = (BoundSheetRecord) record;
-                System.out.println("New sheet named: " + bsr.getSheetname());
-                break;
-            case RowRecord.sid:
-                RowRecord rowrec = (RowRecord) record;
-                System.out.println("Row found, first column at "
-                        + rowrec.getFirstCol() + " last column at " + rowrec.getLastCol());
-                break;
-            case NumberRecord.sid:
-                NumberRecord numrec = (NumberRecord) record;
-                System.out.println("Cell found with value " + numrec.getValue()
-                        + " at row " + numrec.getRow() + " and column " + numrec.getColumn());
-                break;
-                // SSTRecords store an array of unique strings used in Excel.
-            case SSTRecord.sid:
-                sstrec = (SSTRecord) record;
-                for (int k = 0; k < sstrec.getNumUniqueStrings(); k++)
-                {
-                    System.out.println("String table value " + k + " = " + sstrec.getString(k));
-                }
-                break;
-            case LabelSSTRecord.sid:
-                LabelSSTRecord lrec = (LabelSSTRecord) record;
-                System.out.println("String cell found with value "
-                        + sstrec.getString(lrec.getSSTIndex()));
-                break;
-        }
-    }
+public class CsvMultitool {
     /**
      * Read an excel file and convert a sheet to CSV.
      *
@@ -150,32 +93,35 @@ public class CsvMultitool implements HSSFListener {
     }
     
     private static void convertSheetToCsv(Sheet sheet, String outputFile) throws IOException {
-        Writer writer;
         
         if (outputFile != null) {
-            writer = new FileWriter(outputFile, StandardCharsets.UTF_8);
+            // Write to file
+            try (Writer writer = new FileWriter(outputFile, StandardCharsets.UTF_8);
+                 CsvWriter csvWriter = CsvWriter.builder().build(writer)) {
+                writeSheetData(sheet, csvWriter);
+            }
         } else {
-            writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
-        }
-        
-        try (CsvWriter csvWriter = CsvWriter.builder().build(writer)) {
-            for (Row row : sheet) {
-                List<String> values = new ArrayList<>();
-                
-                // Get the last cell number to ensure we write all columns
-                int lastCellNum = row.getLastCellNum();
-                
-                for (int cellIndex = 0; cellIndex < lastCellNum; cellIndex++) {
-                    Cell cell = row.getCell(cellIndex);
-                    values.add(getCellValueAsString(cell));
-                }
-                
-                csvWriter.writeRecord(values);
+            // Write to stdout
+            Writer writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
+            try (CsvWriter csvWriter = CsvWriter.builder().build(writer)) {
+                writeSheetData(sheet, csvWriter);
             }
         }
-        
-        if (outputFile != null) {
-            writer.close();
+    }
+    
+    private static void writeSheetData(Sheet sheet, CsvWriter csvWriter) throws IOException {
+        for (Row row : sheet) {
+            List<String> values = new ArrayList<>();
+            
+            // Get the last cell number to ensure we write all columns
+            int lastCellNum = row.getLastCellNum();
+            
+            for (int cellIndex = 0; cellIndex < lastCellNum; cellIndex++) {
+                Cell cell = row.getCell(cellIndex);
+                values.add(getCellValueAsString(cell));
+            }
+            
+            csvWriter.writeRecord(values);
         }
     }
     
