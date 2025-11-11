@@ -1,5 +1,6 @@
 package org.example;
 
+import com.monitorjbl.xlsx.StreamingReader;
 import de.siegmar.fastcsv.writer.CsvWriter;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
@@ -48,29 +49,56 @@ public class CsvMultitool {
 
     private static void processOoxmlExcel2003(File file, String sheetIdentifier, String outputFile) throws IOException {
         
-        // Use the full Apache POI API
-        try (FileInputStream fis = new FileInputStream(file);
-             org.apache.poi.xssf.usermodel.XSSFWorkbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(fis)) {
-            
-            // If no sheet identifier is provided, list all sheets
-            if (sheetIdentifier == null) {
-                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                    println(workbook.getSheetName(i));
-                }
-                return;
+        // Use streaming reader for memory efficiency with large files
+        Workbook workbook = StreamingReader.builder()
+                .rowCacheSize(100)    // number of rows to keep in memory (defaults to 10)
+                .bufferSize(4096)     // buffer size to use when reading InputStream to file (defaults to 1024)
+                .open(file);            // InputStream or File for XLSX file (required)
+        
+        // If no sheet identifier is provided, list all sheets
+        if (sheetIdentifier == null) {
+            for (Sheet sheet : workbook){
+               println(sheet.getSheetName());
             }
-            
-            // Find the target sheet by name or index
-            Sheet targetSheet = findSheet(workbook, sheetIdentifier);
-            
-            if (targetSheet == null) {
-                println("Sheet not found: " + sheetIdentifier);
-                return;
-            }
-            
-            // Convert sheet to CSV
-            convertSheetToCsv(targetSheet, outputFile);
+            return;
         }
+
+        // Find the target sheet by name or index (streaming approach)
+        Sheet targetSheet = findSheetStreaming(workbook, sheetIdentifier);
+        
+        if (targetSheet == null) {
+            println("Sheet not found: " + sheetIdentifier);
+            return;
+        }
+
+        // Convert sheet to CSV
+        convertSheetToCsv(targetSheet, outputFile);
+    }
+    
+    private static Sheet findSheetStreaming(Workbook workbook, String sheetIdentifier) {
+        // Try to parse as an integer (0-based index)
+        Integer targetIndex = null;
+        try {
+            targetIndex = Integer.parseInt(sheetIdentifier);
+        } catch (NumberFormatException e) {
+            // Not an integer, will search by name
+        }
+        
+        // Iterate through sheets to find by index or name
+        int currentIndex = 0;
+        for (Sheet sheet : workbook) {
+            // Check if matches by index
+            if (targetIndex != null && currentIndex == targetIndex) {
+                return sheet;
+            }
+            // Check if matches by name
+            if (sheet.getSheetName().equals(sheetIdentifier)) {
+                return sheet;
+            }
+            currentIndex++;
+        }
+        
+        return null;
     }
 
     private static void println(String text) {
