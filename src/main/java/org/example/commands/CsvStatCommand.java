@@ -16,9 +16,8 @@ public class CsvStatCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        try {
-            Reader reader = getReader();
-            CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader);
+        try (Reader reader = getReader();
+             CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
 
             List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());
             Map<String, ColumnStats> stats = new LinkedHashMap<>();
@@ -37,8 +36,6 @@ public class CsvStatCommand implements Callable<Integer> {
                     stats.get(header).addValue(value);
                 }
             }
-
-            reader.close();
 
             // Print statistics
             System.out.println("Total rows: " + rowCount);

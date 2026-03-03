@@ -36,52 +36,51 @@ public class CsvGrepCommand implements Callable<Integer> {
                 return 1;
             }
 
-            Reader reader = getReader();
-            CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader);
+            try (Reader reader = getReader();
+                 CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
 
-            List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());
-            String targetColumn = resolveColumn(headers);
+                List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());
+                String targetColumn = resolveColumn(headers);
 
-            if (targetColumn == null) {
-                System.err.println("Error: Column not found: " + column);
-                reader.close();
-                return 1;
-            }
-
-            Pattern pattern = null;
-            if (regex != null) {
-                pattern = Pattern.compile(regex);
-            }
-
-            CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT);
-            printer.printRecord(headers);
-
-            for (CSVRecord record : parser) {
-                String value = record.get(targetColumn);
-                boolean matches = false;
-
-                if (matchString != null) {
-                    matches = value.equals(matchString);
-                } else if (pattern != null) {
-                    matches = pattern.matcher(value).find();
+                if (targetColumn == null) {
+                    System.err.println("Error: Column not found: " + column);
+                    return 1;
                 }
 
-                if (invert) {
-                    matches = !matches;
+                Pattern pattern = null;
+                if (regex != null) {
+                    pattern = Pattern.compile(regex);
                 }
 
-                if (matches) {
-                    List<String> values = new ArrayList<>();
-                    for (String header : headers) {
-                        values.add(record.get(header));
+                CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT);
+                printer.printRecord(headers);
+
+                for (CSVRecord record : parser) {
+                    String value = record.get(targetColumn);
+                    boolean matches = false;
+
+                    if (matchString != null) {
+                        matches = value.equals(matchString);
+                    } else if (pattern != null) {
+                        matches = pattern.matcher(value).find();
                     }
-                    printer.printRecord(values);
-                }
-            }
 
-            printer.flush();
-            reader.close();
-            return 0;
+                    if (invert) {
+                        matches = !matches;
+                    }
+
+                    if (matches) {
+                        List<String> values = new ArrayList<>();
+                        for (String header : headers) {
+                            values.add(record.get(header));
+                        }
+                        printer.printRecord(values);
+                    }
+                }
+
+                printer.flush();
+                return 0;
+            }
 
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());

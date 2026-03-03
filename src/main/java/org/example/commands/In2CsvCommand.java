@@ -51,7 +51,9 @@ public class In2CsvCommand implements Callable<Integer> {
                 if (listNames) {
                     listHssfSheetNames(inputFile);
                 } else {
-                    convertHssfToCsv(inputFile, sheetName);
+                    System.err.println("Error: Converting Excel 97-2003 (.xls) to CSV is not fully implemented yet.");
+                    System.err.println("Please convert your file to .xlsx format first or use sheet listing with -n option.");
+                    return 1;
                 }
                 break;
             case OOXML:

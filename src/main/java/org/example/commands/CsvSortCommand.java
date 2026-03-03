@@ -23,9 +23,8 @@ public class CsvSortCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        try {
-            Reader reader = getReader();
-            CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader);
+        try (Reader reader = getReader();
+             CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
 
             List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());
             List<CSVRecord> records = new ArrayList<>();
@@ -34,8 +33,6 @@ public class CsvSortCommand implements Callable<Integer> {
             for (CSVRecord record : parser) {
                 records.add(record);
             }
-
-            reader.close();
 
             // Determine sort columns
             List<String> columnsToSort = determineSortColumns(headers);

@@ -16,9 +16,8 @@ public class CsvLookCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        try {
-            Reader reader = getReader();
-            CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader);
+        try (Reader reader = getReader();
+             CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
 
             List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());
             List<List<String>> rows = new ArrayList<>();
@@ -31,8 +30,6 @@ public class CsvLookCommand implements Callable<Integer> {
                 }
                 rows.add(row);
             }
-
-            reader.close();
 
             // Calculate column widths
             int[] widths = calculateColumnWidths(headers, rows);

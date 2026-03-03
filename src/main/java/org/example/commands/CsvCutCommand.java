@@ -26,9 +26,8 @@ public class CsvCutCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        try {
-            Reader reader = getReader();
-            CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader);
+        try (Reader reader = getReader();
+             CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
             List<String> headers = new ArrayList<>(headerMap.keySet());
@@ -39,7 +38,6 @@ public class CsvCutCommand implements Callable<Integer> {
                     System.out.println("  " + index + ": " + header);
                     index++;
                 }
-                reader.close();
                 return 0;
             }
 
@@ -47,7 +45,6 @@ public class CsvCutCommand implements Callable<Integer> {
             
             if (selectedColumns.isEmpty()) {
                 System.err.println("Error: No columns selected");
-                reader.close();
                 return 1;
             }
 
@@ -66,7 +63,6 @@ public class CsvCutCommand implements Callable<Integer> {
             }
 
             printer.flush();
-            reader.close();
             return 0;
 
         } catch (Exception e) {
