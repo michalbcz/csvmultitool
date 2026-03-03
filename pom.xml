@@ -16,30 +16,16 @@
 
     <!-- Apache POI with XSSF (XML based MS Sheet *.xlsx -->
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>org.apache.poi</groupId>-->
-<!--            <artifactId>poi-ooxml</artifactId>-->
-<!--            <version>5.2.2</version>-->
-<!--        </dependency>-->
-
         <dependency>
             <groupId>com.monitorjbl</groupId>
             <artifactId>xlsx-streamer</artifactId>
             <version>2.1.0</version>
         </dependency>
 
-        <!-- Apache Commons CSV for CSV operations -->
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <version>1.10.0</version>
-        </dependency>
-
-        <!-- picocli for command-line parsing -->
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.7.5</version>
+            <groupId>de.siegmar</groupId>
+            <artifactId>fastcsv</artifactId>
+            <version>3.3.1</version>
         </dependency>
 
     </dependencies>
