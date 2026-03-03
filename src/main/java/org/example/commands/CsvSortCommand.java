@@ -68,18 +68,19 @@ public class CsvSortCommand implements Callable<Integer> {
             });
 
             // Output sorted data
-            CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT);
-            printer.printRecord(headers);
+            try (CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+                printer.printRecord(headers);
 
-            for (CSVRecord record : records) {
-                List<String> values = new ArrayList<>();
-                for (String header : headers) {
-                    values.add(record.get(header));
+                for (CSVRecord record : records) {
+                    List<String> values = new ArrayList<>();
+                    for (String header : headers) {
+                        values.add(record.get(header));
+                    }
+                    printer.printRecord(values);
                 }
-                printer.printRecord(values);
-            }
 
-            printer.flush();
+                printer.flush();
+            }
             return 0;
 
         } catch (Exception e) {

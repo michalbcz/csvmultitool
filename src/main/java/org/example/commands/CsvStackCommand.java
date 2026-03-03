@@ -23,45 +23,43 @@ public class CsvStackCommand implements Callable<Integer> {
             }
 
             List<String> commonHeaders = null;
-            CSVPrinter printer = null;
+            
+            try (CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+                for (String inputFile : inputFiles) {
+                    try (Reader reader = new FileReader(new File(inputFile));
+                         CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
 
-            for (String inputFile : inputFiles) {
-                try (Reader reader = new FileReader(new File(inputFile));
-                     CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
+                        List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());
 
-                    List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());
-
-                    // First file establishes the headers
-                    if (commonHeaders == null) {
-                        commonHeaders = headers;
-                        printer = new CSVPrinter(System.out, CSVFormat.DEFAULT);
-                        printer.printRecord(commonHeaders);
-                    } else {
-                        // Verify headers match
-                        if (!headers.equals(commonHeaders)) {
-                            System.err.println("Warning: Headers don't match in file: " + inputFile);
-                            System.err.println("Expected: " + commonHeaders);
-                            System.err.println("Found: " + headers);
-                        }
-                    }
-
-                    // Copy all records
-                    for (CSVRecord record : parser) {
-                        List<String> values = new ArrayList<>();
-                        for (String header : commonHeaders) {
-                            try {
-                                values.add(record.get(header));
-                            } catch (IllegalArgumentException e) {
-                                // Column doesn't exist in this file
-                                values.add("");
+                        // First file establishes the headers
+                        if (commonHeaders == null) {
+                            commonHeaders = headers;
+                            printer.printRecord(commonHeaders);
+                        } else {
+                            // Verify headers match
+                            if (!headers.equals(commonHeaders)) {
+                                System.err.println("Warning: Headers don't match in file: " + inputFile);
+                                System.err.println("Expected: " + commonHeaders);
+                                System.err.println("Found: " + headers);
                             }
                         }
-                        printer.printRecord(values);
+
+                        // Copy all records
+                        for (CSVRecord record : parser) {
+                            List<String> values = new ArrayList<>();
+                            for (String header : commonHeaders) {
+                                try {
+                                    values.add(record.get(header));
+                                } catch (IllegalArgumentException e) {
+                                    // Column doesn't exist in this file
+                                    values.add("");
+                                }
+                            }
+                            printer.printRecord(values);
+                        }
                     }
                 }
-            }
 
-            if (printer != null) {
                 printer.flush();
             }
 

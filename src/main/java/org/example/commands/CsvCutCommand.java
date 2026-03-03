@@ -48,21 +48,21 @@ public class CsvCutCommand implements Callable<Integer> {
                 return 1;
             }
 
-            CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT);
+            try (CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+                // Print header
+                printer.printRecord(selectedColumns);
 
-            // Print header
-            printer.printRecord(selectedColumns);
-
-            // Print data rows
-            for (CSVRecord record : parser) {
-                List<String> values = new ArrayList<>();
-                for (String col : selectedColumns) {
-                    values.add(record.get(col));
+                // Print data rows
+                for (CSVRecord record : parser) {
+                    List<String> values = new ArrayList<>();
+                    for (String col : selectedColumns) {
+                        values.add(record.get(col));
+                    }
+                    printer.printRecord(values);
                 }
-                printer.printRecord(values);
-            }
 
-            printer.flush();
+                printer.flush();
+            }
             return 0;
 
         } catch (Exception e) {

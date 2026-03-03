@@ -131,17 +131,17 @@ public class In2CsvCommand implements Callable<Integer> {
                 return;
             }
 
-            CSVPrinter csvPrinter = new CSVPrinter(System.out, CSVFormat.DEFAULT);
-
-            for (Row row : targetSheet) {
-                List<String> values = new ArrayList<>();
-                for (Cell cell : row) {
-                    values.add(getCellValueAsString(cell));
+            try (CSVPrinter csvPrinter = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+                for (Row row : targetSheet) {
+                    List<String> values = new ArrayList<>();
+                    for (Cell cell : row) {
+                        values.add(getCellValueAsString(cell));
+                    }
+                    csvPrinter.printRecord(values);
                 }
-                csvPrinter.printRecord(values);
-            }
 
-            csvPrinter.flush();
+                csvPrinter.flush();
+            }
         } catch (Exception e) {
             System.err.println("Error converting Excel to CSV: " + e.getMessage());
         }

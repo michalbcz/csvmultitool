@@ -52,33 +52,34 @@ public class CsvGrepCommand implements Callable<Integer> {
                     pattern = Pattern.compile(regex);
                 }
 
-                CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT);
-                printer.printRecord(headers);
+                try (CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+                    printer.printRecord(headers);
 
-                for (CSVRecord record : parser) {
-                    String value = record.get(targetColumn);
-                    boolean matches = false;
+                    for (CSVRecord record : parser) {
+                        String value = record.get(targetColumn);
+                        boolean matches = false;
 
-                    if (matchString != null) {
-                        matches = value.equals(matchString);
-                    } else if (pattern != null) {
-                        matches = pattern.matcher(value).find();
-                    }
-
-                    if (invert) {
-                        matches = !matches;
-                    }
-
-                    if (matches) {
-                        List<String> values = new ArrayList<>();
-                        for (String header : headers) {
-                            values.add(record.get(header));
+                        if (matchString != null) {
+                            matches = value.equals(matchString);
+                        } else if (pattern != null) {
+                            matches = pattern.matcher(value).find();
                         }
-                        printer.printRecord(values);
-                    }
-                }
 
-                printer.flush();
+                        if (invert) {
+                            matches = !matches;
+                        }
+
+                        if (matches) {
+                            List<String> values = new ArrayList<>();
+                            for (String header : headers) {
+                                values.add(record.get(header));
+                            }
+                            printer.printRecord(values);
+                        }
+                    }
+
+                    printer.flush();
+                }
                 return 0;
             }
 
