@@ -19,22 +19,25 @@ Data are zipped Excel97 (M$ binary proprietary format) files. Unzipped size is ~
 
 I wanted to just easily convert it to CSV. I found recommended tool for that - https://csvkit.readthedocs.io/en/latest/
 
-Let's list all the sheet names:
-```
-$ time in2csv -n cetnost-prijmeni.xls
-c_po_1-PŘÍJM
-c_po_2-GELTN
-c_po_3-KUBÁN
-c_po_4-PREKS
-c_po_5-VALAC
-
-real    2m13.304s
-user    0m0.000s
-sys     0m0.000s
-```
-
-You see? It works but merely listing of sheet names takes slightly more than 2 minutes.
-
-So then I started to be curious. csvkit is written in Python so as a Java Developer by daylight I thought:
+So I started to be curious. csvkit is written in Python so as a Java Developer by daylight I thought:
 "What about to use Java libraries for that. Will it be faster? How faster?"
+
+To find out, I created a small benchmarking script (`benchmark_tool/run_benchmark.py`) that compares `csvkit` (`in2csv`) with this Java implementation on the `cetnost-prijmeni.xls` file.
+
+**Hardware used for the benchmark:**
+* **OS**: Linux
+* **CPU Model**: Intel(R) Xeon(R) Processor @ 2.30GHz
+* **RAM**: 7.77 GB
+
+Here are the results of simply listing the sheet names:
+
+```
+--- Summary ---
+Python (csvkit): 155.851s
+Java (csvmultitool): 8.207s
+Java is 18.99x faster
+---------------
+```
+
+You see? The Java implementation using Apache POI is significantly faster, doing the job in a fraction of the time.
 

@@ -36,3 +36,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Custom ###
+dependency-reduced-pom.xml
+data_source/
+__pycache__/
