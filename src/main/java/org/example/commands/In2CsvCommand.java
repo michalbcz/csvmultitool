@@ -51,9 +51,7 @@ public class In2CsvCommand implements Callable<Integer> {
                 if (listNames) {
                     listHssfSheetNames(inputFile);
                 } else {
-                    System.err.println("Error: Converting Excel 97-2003 (.xls) to CSV is not fully implemented yet.");
-                    System.err.println("Please convert your file to .xlsx format first or use sheet listing with -n option.");
-                    return 1;
+                    convertHssfToCsv(inputFile, sheetName);
                 }
                 break;
             case OOXML:
@@ -72,9 +70,10 @@ public class In2CsvCommand implements Callable<Integer> {
     }
 
     private void listOoxmlSheetNames(File file) {
+        // Optimize for speed and SSD by using larger cache and buffer sizes
         try (Workbook workbook = StreamingReader.builder()
-                .rowCacheSize(100)
-                .bufferSize(4096)
+                .rowCacheSize(1000)
+                .bufferSize(16384)
                 .open(file)) {
             for (Sheet sheet : workbook) {
                 System.out.println(sheet.getSheetName());
@@ -101,9 +100,10 @@ public class In2CsvCommand implements Callable<Integer> {
     }
 
     private void convertOoxmlToCsv(File file, String targetSheetName) {
+        // Optimize for speed and SSD by using larger cache and buffer sizes
         try (Workbook workbook = StreamingReader.builder()
-                .rowCacheSize(100)
-                .bufferSize(4096)
+                .rowCacheSize(1000)
+                .bufferSize(16384)
                 .open(file)) {
 
             Sheet targetSheet = null;
@@ -131,10 +131,20 @@ public class In2CsvCommand implements Callable<Integer> {
                 return;
             }
 
-            try (CSVPrinter csvPrinter = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+            // Using BufferedWriter with a large buffer (64KB) to optimize for SSD writes
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536);
+                 CSVPrinter csvPrinter = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
                 for (Row row : targetSheet) {
                     List<String> values = new ArrayList<>();
-                    for (Cell cell : row) {
+                    // To handle sparse rows in streaming properly, get physical cells or iterate with padding
+                    int lastCellNum = row.getLastCellNum();
+                    if (lastCellNum < 0) {
+                        csvPrinter.printRecord(values);
+                        continue;
+                    }
+
+                    for (int i = 0; i < lastCellNum; i++) {
+                        Cell cell = row.getCell(i, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
                         values.add(getCellValueAsString(cell));
                     }
                     csvPrinter.printRecord(values);
@@ -148,7 +158,63 @@ public class In2CsvCommand implements Callable<Integer> {
     }
 
     private void convertHssfToCsv(File file, String targetSheetName) {
-        System.err.println("HSSF (Excel 97-2003) conversion to CSV not yet fully implemented. Use OOXML format (.xlsx)");
+        try (FileInputStream fis = new FileInputStream(file);
+             org.apache.poi.hssf.usermodel.HSSFWorkbook workbook = new org.apache.poi.hssf.usermodel.HSSFWorkbook(fis)) {
+
+            Sheet targetSheet = null;
+
+            if (targetSheetName == null) {
+                targetSheet = workbook.getSheetAt(0);
+            } else {
+                try {
+                    int index = Integer.parseInt(targetSheetName);
+                    if (index >= 0 && index < workbook.getNumberOfSheets()) {
+                        targetSheet = workbook.getSheetAt(index);
+                    }
+                } catch (NumberFormatException e) {
+                    targetSheet = workbook.getSheet(targetSheetName);
+                }
+            }
+
+            if (targetSheet == null) {
+                System.err.println("Error: Sheet not found: " + targetSheetName);
+                return;
+            }
+
+            // Using BufferedWriter with a large buffer (64KB) to optimize for SSD writes
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536);
+                 CSVPrinter csvPrinter = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
+
+                int maxCellNum = 0;
+                for (Row row : targetSheet) {
+                    if (row.getLastCellNum() > maxCellNum) {
+                        maxCellNum = row.getLastCellNum();
+                    }
+                }
+
+                for (Row row : targetSheet) {
+                    List<String> values = new ArrayList<>();
+                    // To maintain proper CSV alignment, we should iterate up to maxCellNum or the row's last cell.
+                    // Actually, let's just use the row's last cell but pad if needed.
+                    // Better yet, just iterate up to the row's actual last cell.
+                    int lastCellNum = row.getLastCellNum();
+                    if (lastCellNum < 0) {
+                        csvPrinter.printRecord(values); // Empty row
+                        continue;
+                    }
+
+                    for (int i = 0; i < lastCellNum; i++) {
+                        Cell cell = row.getCell(i, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                        values.add(getCellValueAsString(cell));
+                    }
+                    csvPrinter.printRecord(values);
+                }
+
+                csvPrinter.flush();
+            }
+        } catch (Exception e) {
+            System.err.println("Error converting HSSF Excel to CSV: " + e.getMessage());
+        }
     }
 
     private String getCellValueAsString(Cell cell) {

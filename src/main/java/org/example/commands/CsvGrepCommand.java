@@ -52,7 +52,8 @@ public class CsvGrepCommand implements Callable<Integer> {
                     pattern = Pattern.compile(regex);
                 }
 
-                try (CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+                try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536);
+                     CSVPrinter printer = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
                     printer.printRecord(headers);
 
                     for (CSVRecord record : parser) {
@@ -91,13 +92,13 @@ public class CsvGrepCommand implements Callable<Integer> {
 
     private Reader getReader() throws IOException {
         if ("-".equals(inputFile)) {
-            return new InputStreamReader(System.in);
+            return new BufferedReader(new InputStreamReader(System.in), 65536);
         } else {
             File file = new File(inputFile);
             if (!file.exists()) {
                 throw new IOException("File not found: " + inputFile);
             }
-            return new FileReader(file);
+            return new BufferedReader(new FileReader(file), 65536);
         }
     }
 

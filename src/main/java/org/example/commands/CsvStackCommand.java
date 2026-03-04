@@ -24,9 +24,10 @@ public class CsvStackCommand implements Callable<Integer> {
 
             List<String> commonHeaders = null;
             
-            try (CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536);
+                 CSVPrinter printer = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
                 for (String inputFile : inputFiles) {
-                    try (Reader reader = new FileReader(new File(inputFile));
+                    try (Reader reader = new BufferedReader(new FileReader(new File(inputFile)), 65536);
                          CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
 
                         List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());
