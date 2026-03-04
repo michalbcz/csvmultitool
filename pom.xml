@@ -16,22 +16,23 @@
 
     <!-- Apache POI with XSSF (XML based MS Sheet *.xlsx -->
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>org.apache.poi</groupId>-->
-<!--            <artifactId>poi-ooxml</artifactId>-->
-<!--            <version>5.2.2</version>-->
-<!--        </dependency>-->
-
         <dependency>
             <groupId>com.monitorjbl</groupId>
             <artifactId>xlsx-streamer</artifactId>
             <version>2.1.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>de.siegmar</groupId>
+            <artifactId>fastcsv</artifactId>
+            <version>3.3.1</version>
+        </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Maven Shade Plugin to create fat JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -54,5 +55,6 @@
             </plugin>
         </plugins>
     </build>
+
 
 </project>

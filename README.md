@@ -1,3 +1,118 @@
+# CSV Multitool
+
+A high-performance Java implementation of csvkit's most popular features. Inspired by the Python csvkit library, this tool provides fast command-line utilities for working with CSV and Excel files.
+
+## Features
+
+This tool implements the most commonly used csvkit commands:
+
+### in2csv - Excel to CSV Converter
+Convert Excel files (both .xls and .xlsx) to CSV format.
+
+```bash
+# List sheet names
+java -jar csvmultitool.jar in2csv -n file.xlsx
+
+# Convert first sheet to CSV
+java -jar csvmultitool.jar in2csv file.xlsx > output.csv
+
+# Convert specific sheet by name
+java -jar csvmultitool.jar in2csv -s "Sheet2" file.xlsx > output.csv
+```
+
+### csvcut - Column Selection
+Select, reorder, or exclude columns from CSV files.
+
+```bash
+# Display column names and indices
+java -jar csvmultitool.jar csvcut -n data.csv
+
+# Select specific columns
+java -jar csvmultitool.jar csvcut -c name,age data.csv
+
+# Select columns by index (1-based)
+java -jar csvmultitool.jar csvcut -c 1,3,5 data.csv
+
+# Exclude columns
+java -jar csvmultitool.jar csvcut -C city data.csv
+```
+
+### csvlook - Pretty Print
+Display CSV data in a readable table format.
+
+```bash
+java -jar csvmultitool.jar csvlook data.csv
+```
+
+### csvsort - Sort Data
+Sort CSV data by one or more columns.
+
+```bash
+# Sort by single column
+java -jar csvmultitool.jar csvsort -c age data.csv
+
+# Sort by multiple columns
+java -jar csvmultitool.jar csvsort -c age,name data.csv
+
+# Sort in descending order
+java -jar csvmultitool.jar csvsort -c salary -r data.csv
+```
+
+### csvgrep - Filter Rows
+Filter rows based on pattern matching.
+
+```bash
+# Match exact string
+java -jar csvmultitool.jar csvgrep -c city -m "NYC" data.csv
+
+# Match regular expression
+java -jar csvmultitool.jar csvgrep -c name -r "^J" data.csv
+
+# Invert match (select non-matching rows)
+java -jar csvmultitool.jar csvgrep -c status -m "active" -i data.csv
+```
+
+### csvstat - Statistics
+Generate summary statistics for each column.
+
+```bash
+java -jar csvmultitool.jar csvstat data.csv
+```
+
+Displays:
+- Data type (Number/Text)
+- Null count
+- Unique value count
+- Min/Max/Mean (for numeric columns)
+- Max length (for text columns)
+- Sample values (if unique count ≤ 5)
+
+### csvstack - Combine Files
+Stack multiple CSV files vertically (append rows).
+
+```bash
+java -jar csvmultitool.jar csvstack file1.csv file2.csv file3.csv > combined.csv
+```
+
+## Building
+
+```bash
+mvn clean package
+```
+
+This creates a fat JAR with all dependencies at `target/csvmultitool-1.0-SNAPSHOT.jar`.
+
+## Requirements
+
+- Java 17 or higher
+- Maven 3.6 or higher (for building)
+
+## Performance
+
+This Java implementation provides significantly faster performance compared to the Python csvkit, especially for large Excel files. The original Python implementation took over 2 minutes to list sheet names from a large Excel file, while this Java version completes the same operation in seconds.
+
+## Original Story
+
 # How this starts?
 
 It was typical case of falling through white rabbit hole.
