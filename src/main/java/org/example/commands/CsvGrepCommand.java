@@ -10,6 +10,8 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
+import org.example.CsvMultitool;
+
 @Command(name = "csvgrep", description = "Filter CSV rows based on pattern matching")
 public class CsvGrepCommand implements Callable<Integer> {
 
@@ -52,7 +54,7 @@ public class CsvGrepCommand implements Callable<Integer> {
                     pattern = Pattern.compile(regex);
                 }
 
-                try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536);
+                try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), CsvMultitool.BUFFER_SIZE);
                      CSVPrinter printer = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
                     printer.printRecord(headers);
 
@@ -92,13 +94,13 @@ public class CsvGrepCommand implements Callable<Integer> {
 
     private Reader getReader() throws IOException {
         if ("-".equals(inputFile)) {
-            return new BufferedReader(new InputStreamReader(System.in), 65536);
+            return new BufferedReader(new InputStreamReader(System.in), CsvMultitool.BUFFER_SIZE);
         } else {
             File file = new File(inputFile);
             if (!file.exists()) {
                 throw new IOException("File not found: " + inputFile);
             }
-            return new BufferedReader(new FileReader(file), 65536);
+            return new BufferedReader(new FileReader(file), CsvMultitool.BUFFER_SIZE);
         }
     }
 

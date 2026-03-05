@@ -8,6 +8,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.Callable;
 
+import org.example.CsvMultitool;
+
 @Command(name = "csvstack", description = "Stack multiple CSV files vertically")
 public class CsvStackCommand implements Callable<Integer> {
 
@@ -24,10 +26,10 @@ public class CsvStackCommand implements Callable<Integer> {
 
             List<String> commonHeaders = null;
             
-            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536);
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), CsvMultitool.BUFFER_SIZE);
                  CSVPrinter printer = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
                 for (String inputFile : inputFiles) {
-                    try (Reader reader = new BufferedReader(new FileReader(new File(inputFile)), 65536);
+                    try (Reader reader = new BufferedReader(new FileReader(new File(inputFile)), CsvMultitool.BUFFER_SIZE);
                          CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
 
                         List<String> headers = new ArrayList<>(parser.getHeaderMap().keySet());

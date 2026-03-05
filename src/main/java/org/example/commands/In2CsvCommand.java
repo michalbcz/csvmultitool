@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.example.CsvMultitool;
+
 @Command(name = "in2csv", description = "Convert Excel files to CSV")
 public class In2CsvCommand implements Callable<Integer> {
 
@@ -132,7 +134,7 @@ public class In2CsvCommand implements Callable<Integer> {
             }
 
             // Using BufferedWriter with a large buffer (64KB) to optimize for SSD writes
-            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536);
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), CsvMultitool.BUFFER_SIZE);
                  CSVPrinter csvPrinter = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
                 for (Row row : targetSheet) {
                     List<String> values = new ArrayList<>();
@@ -182,7 +184,7 @@ public class In2CsvCommand implements Callable<Integer> {
             }
 
             // Using BufferedWriter with a large buffer (64KB) to optimize for SSD writes
-            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536);
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), CsvMultitool.BUFFER_SIZE);
                  CSVPrinter csvPrinter = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
 
                 int maxCellNum = 0;

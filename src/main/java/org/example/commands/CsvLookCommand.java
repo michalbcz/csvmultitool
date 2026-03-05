@@ -8,6 +8,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.Callable;
 
+import org.example.CsvMultitool;
+
 @Command(name = "csvlook", description = "Pretty-print CSV data in a table format")
 public class CsvLookCommand implements Callable<Integer> {
 
@@ -34,7 +36,7 @@ public class CsvLookCommand implements Callable<Integer> {
             // Calculate column widths
             int[] widths = calculateColumnWidths(headers, rows);
 
-            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), 65536)) {
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), CsvMultitool.BUFFER_SIZE)) {
                 // Print header separator
                 printSeparator(widths, bw);
 
@@ -65,13 +67,13 @@ public class CsvLookCommand implements Callable<Integer> {
 
     private Reader getReader() throws IOException {
         if ("-".equals(inputFile)) {
-            return new BufferedReader(new InputStreamReader(System.in), 65536);
+            return new BufferedReader(new InputStreamReader(System.in), CsvMultitool.BUFFER_SIZE);
         } else {
             File file = new File(inputFile);
             if (!file.exists()) {
                 throw new IOException("File not found: " + inputFile);
             }
-            return new BufferedReader(new FileReader(file), 65536);
+            return new BufferedReader(new FileReader(file), CsvMultitool.BUFFER_SIZE);
         }
     }
 
