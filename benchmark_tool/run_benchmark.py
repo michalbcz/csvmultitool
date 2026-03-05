@@ -152,7 +152,7 @@ def main():
         print("Python (csvkit) benchmark failed or csvkit is not installed. Please run 'pip install csvkit'.\n")
 
     # Run Java application benchmark
-    java_cmd = ["java", "-jar", jar_file, excel_file]
+    java_cmd = ["java", "-jar", jar_file, "in2csv", "-n", excel_file]
     success_java, output_java, time_java = run_command(java_cmd, "Java (csvmultitool) sheet listing")
 
     if success_java:

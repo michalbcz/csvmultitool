@@ -148,9 +148,9 @@ Here are the results of simply listing the sheet names:
 
 ```
 --- Summary ---
-Python (csvkit): 155.851s
-Java (csvmultitool): 8.207s
-Java is 18.99x faster
+Python (csvkit): 142.196s
+Java (csvmultitool): 8.112s
+Java is 17.53x faster
 ---------------
 ```
 
