@@ -140,34 +140,72 @@ def main():
         print(f"{key}: {value}")
     print("---------------------\n")
 
-    # Run Python csvkit benchmark
-    # Note: Requires csvkit to be installed via pip
-    csvkit_cmd = ["in2csv", "-n", excel_file]
-    success_csvkit, output_csvkit, time_csvkit = run_command(csvkit_cmd, "Python (csvkit) sheet listing")
+    print("Running Sheet Listing Benchmarks...")
 
-    if success_csvkit:
-        print(f"csvkit output (first 5 lines):\n{chr(10).join(output_csvkit.strip().split(chr(10))[:5])}")
-        print(f"csvkit time: {time_csvkit:.3f} seconds\n")
+    # Run Python csvkit benchmark (Sheet Listing)
+    csvkit_cmd_n = ["in2csv", "-n", excel_file]
+    success_csvkit_n, output_csvkit_n, time_csvkit_n = run_command(csvkit_cmd_n, "Python (csvkit) sheet listing")
+
+    if success_csvkit_n:
+        print(f"csvkit time: {time_csvkit_n:.3f} seconds\n")
     else:
-        print("Python (csvkit) benchmark failed or csvkit is not installed. Please run 'pip install csvkit'.\n")
+        print("Python (csvkit) benchmark failed.\n")
 
-    # Run Java application benchmark
-    java_cmd = ["java", "-jar", jar_file, "in2csv", "-n", excel_file]
-    success_java, output_java, time_java = run_command(java_cmd, "Java (csvmultitool) sheet listing")
+    # Run Java application benchmark (Sheet Listing)
+    java_cmd_n = ["java", "-jar", jar_file, "in2csv", "-n", excel_file]
+    success_java_n, output_java_n, time_java_n = run_command(java_cmd_n, "Java (csvmultitool) sheet listing")
 
-    if success_java:
-        print(f"Java output (first 5 lines):\n{chr(10).join(output_java.strip().split(chr(10))[:5])}")
-        print(f"Java time: {time_java:.3f} seconds\n")
+    if success_java_n:
+        print(f"Java time: {time_java_n:.3f} seconds\n")
     else:
         print("Java benchmark failed.\n")
 
-    if success_csvkit and success_java:
-        print("--- Summary ---")
-        print(f"Python (csvkit): {time_csvkit:.3f}s")
-        print(f"Java (csvmultitool): {time_java:.3f}s")
-        speedup = time_csvkit / time_java if time_java > 0 else 0
-        print(f"Java is {speedup:.2f}x faster")
-        print("---------------\n")
+
+    print("Running Full Data Extraction Benchmarks...")
+
+    # For full extraction, we extract a specific sheet to a temp file
+    # We will use the first sheet which is simply passing no -s arguments
+    # to avoid unicode issues in shell on the CI.
+    csvkit_out = "csvkit_output.csv"
+    java_out = "java_output.csv"
+
+    # Python full extraction
+    csvkit_cmd_extract = f"in2csv {excel_file} > {csvkit_out}"
+    print(f"Running: Python (csvkit) full extraction")
+    start_time = time.time()
+    os.system(csvkit_cmd_extract)
+    time_csvkit_extract = time.time() - start_time
+    print(f"csvkit time: {time_csvkit_extract:.3f} seconds\n")
+
+    # Java full extraction
+    java_cmd_extract = f"java -jar {jar_file} in2csv {excel_file} > {java_out}"
+    print(f"Running: Java (csvmultitool) full extraction")
+    start_time = time.time()
+    os.system(java_cmd_extract)
+    time_java_extract = time.time() - start_time
+    print(f"Java time: {time_java_extract:.3f} seconds\n")
+
+
+    print("--- Summary: Sheet Listing ---")
+    if success_csvkit_n and success_java_n:
+        print(f"Python (csvkit): {time_csvkit_n:.3f}s")
+        print(f"Java (csvmultitool): {time_java_n:.3f}s")
+        speedup_n = time_csvkit_n / time_java_n if time_java_n > 0 else 0
+        print(f"Java is {speedup_n:.2f}x faster")
+    print("------------------------------\n")
+
+    print("--- Summary: Full Extraction ---")
+    print(f"Python (csvkit): {time_csvkit_extract:.3f}s")
+    print(f"Java (csvmultitool): {time_java_extract:.3f}s")
+    speedup_ex = time_csvkit_extract / time_java_extract if time_java_extract > 0 else 0
+    print(f"Java is {speedup_ex:.2f}x faster")
+    print("--------------------------------\n")
+
+    # Cleanup temp files
+    if os.path.exists(csvkit_out):
+        os.remove(csvkit_out)
+    if os.path.exists(java_out):
+        os.remove(java_out)
 
 if __name__ == "__main__":
     main()
