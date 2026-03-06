@@ -6,10 +6,12 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.poi.hssf.eventusermodel.*;
 import org.apache.poi.hssf.record.BOFRecord;
 import org.apache.poi.hssf.record.BoundSheetRecord;
+import org.apache.poi.hssf.record.EOFRecord;
 import org.apache.poi.hssf.record.LabelSSTRecord;
 import org.apache.poi.hssf.record.NumberRecord;
 import org.apache.poi.hssf.record.RowRecord;
 import org.apache.poi.hssf.record.SSTRecord;
+import org.apache.poi.hssf.record.StringRecord;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.*;
@@ -233,9 +235,12 @@ public class In2CsvCommand implements Callable<Integer> {
                         case BOFRecord.sid:
                             BOFRecord bof = (BOFRecord) record;
                             if (bof.getType() == BOFRecord.TYPE_WORKSHEET) {
-                                // If we haven't found a target match by name/index yet,
-                                // we just rely on the boundsheet parsing earlier.
+                                // Keep track of current sheet index using BOF if needed
                             }
+                            break;
+
+                        case EOFRecord.sid:
+                            // End of sheet, could trigger flush if we track sheet scope exactly
                             break;
 
                         case SSTRecord.sid:
@@ -258,6 +263,7 @@ public class In2CsvCommand implements Callable<Integer> {
                             }
                             break;
 
+
                         case LabelSSTRecord.sid:
                             if (!isTarget) break;
                             LabelSSTRecord lrec = (LabelSSTRecord) record;
@@ -277,6 +283,7 @@ public class In2CsvCommand implements Callable<Integer> {
             };
             req.addListener(listener, BoundSheetRecord.sid);
             req.addListener(listener, BOFRecord.sid);
+            req.addListener(listener, EOFRecord.sid);
             req.addListener(listener, SSTRecord.sid);
             req.addListener(listener, NumberRecord.sid);
             req.addListener(listener, LabelSSTRecord.sid);
