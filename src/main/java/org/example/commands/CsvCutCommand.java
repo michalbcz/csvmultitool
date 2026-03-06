@@ -9,6 +9,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.Callable;
 
+import org.example.CsvMultitool;
+
 @Command(name = "csvcut", description = "Select or reorder columns from CSV files")
 public class CsvCutCommand implements Callable<Integer> {
 
@@ -48,7 +50,8 @@ public class CsvCutCommand implements Callable<Integer> {
                 return 1;
             }
 
-            try (CSVPrinter printer = new CSVPrinter(System.out, CSVFormat.DEFAULT)) {
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), CsvMultitool.BUFFER_SIZE);
+                 CSVPrinter printer = new CSVPrinter(bw, CSVFormat.DEFAULT)) {
                 // Print header
                 printer.printRecord(selectedColumns);
 
@@ -73,13 +76,13 @@ public class CsvCutCommand implements Callable<Integer> {
 
     private Reader getReader() throws IOException {
         if ("-".equals(inputFile)) {
-            return new InputStreamReader(System.in);
+            return new BufferedReader(new InputStreamReader(System.in), CsvMultitool.BUFFER_SIZE);
         } else {
             File file = new File(inputFile);
             if (!file.exists()) {
                 throw new IOException("File not found: " + inputFile);
             }
-            return new FileReader(file);
+            return new BufferedReader(new FileReader(file), CsvMultitool.BUFFER_SIZE);
         }
     }
 

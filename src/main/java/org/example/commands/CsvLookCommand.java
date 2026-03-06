@@ -8,6 +8,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.Callable;
 
+import org.example.CsvMultitool;
+
 @Command(name = "csvlook", description = "Pretty-print CSV data in a table format")
 public class CsvLookCommand implements Callable<Integer> {
 
@@ -34,22 +36,26 @@ public class CsvLookCommand implements Callable<Integer> {
             // Calculate column widths
             int[] widths = calculateColumnWidths(headers, rows);
 
-            // Print header separator
-            printSeparator(widths);
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out), CsvMultitool.BUFFER_SIZE)) {
+                // Print header separator
+                printSeparator(widths, bw);
 
-            // Print header
-            printRow(headers, widths);
+                // Print header
+                printRow(headers, widths, bw);
 
-            // Print header separator
-            printSeparator(widths);
+                // Print header separator
+                printSeparator(widths, bw);
 
-            // Print data rows
-            for (List<String> row : rows) {
-                printRow(row, widths);
+                // Print data rows
+                for (List<String> row : rows) {
+                    printRow(row, widths, bw);
+                }
+
+                // Print footer separator
+                printSeparator(widths, bw);
+
+                bw.flush();
             }
-
-            // Print footer separator
-            printSeparator(widths);
 
             return 0;
 
@@ -61,13 +67,13 @@ public class CsvLookCommand implements Callable<Integer> {
 
     private Reader getReader() throws IOException {
         if ("-".equals(inputFile)) {
-            return new InputStreamReader(System.in);
+            return new BufferedReader(new InputStreamReader(System.in), CsvMultitool.BUFFER_SIZE);
         } else {
             File file = new File(inputFile);
             if (!file.exists()) {
                 throw new IOException("File not found: " + inputFile);
             }
-            return new FileReader(file);
+            return new BufferedReader(new FileReader(file), CsvMultitool.BUFFER_SIZE);
         }
     }
 
@@ -89,26 +95,26 @@ public class CsvLookCommand implements Callable<Integer> {
         return widths;
     }
 
-    private void printSeparator(int[] widths) {
-        System.out.print("|");
+    private void printSeparator(int[] widths, BufferedWriter bw) throws IOException {
+        bw.write("|");
         for (int width : widths) {
-            System.out.print("-");
+            bw.write("-");
             for (int i = 0; i < width; i++) {
-                System.out.print("-");
+                bw.write("-");
             }
-            System.out.print("-|");
+            bw.write("-|");
         }
-        System.out.println();
+        bw.newLine();
     }
 
-    private void printRow(List<String> values, int[] widths) {
-        System.out.print("|");
+    private void printRow(List<String> values, int[] widths, BufferedWriter bw) throws IOException {
+        bw.write("|");
         for (int i = 0; i < values.size(); i++) {
             String value = values.get(i);
             int width = widths[i];
-            System.out.print(" " + padRight(value, width) + " |");
+            bw.write(" " + padRight(value, width) + " |");
         }
-        System.out.println();
+        bw.newLine();
     }
 
     private String padRight(String s, int n) {
