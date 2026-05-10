@@ -8,6 +8,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.Callable;
 
+import org.example.CsvMultitool;
+
 @Command(name = "csvstat", description = "Generate summary statistics for CSV columns")
 public class CsvStatCommand implements Callable<Integer> {
 
@@ -76,13 +78,13 @@ public class CsvStatCommand implements Callable<Integer> {
 
     private Reader getReader() throws IOException {
         if ("-".equals(inputFile)) {
-            return new InputStreamReader(System.in);
+            return new BufferedReader(new InputStreamReader(System.in), CsvMultitool.BUFFER_SIZE);
         } else {
             File file = new File(inputFile);
             if (!file.exists()) {
                 throw new IOException("File not found: " + inputFile);
             }
-            return new FileReader(file);
+            return new BufferedReader(new FileReader(file), CsvMultitool.BUFFER_SIZE);
         }
     }
 
