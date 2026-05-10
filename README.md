@@ -147,11 +147,17 @@ To find out, I created a small benchmarking script (`benchmark_tool/run_benchmar
 Here are the results of simply listing the sheet names:
 
 ```
---- Summary ---
-Python (csvkit): 155.851s
-Java (csvmultitool): 8.207s
-Java is 18.99x faster
----------------
+--- Summary: Sheet Listing ---
+Python (csvkit): 140.496s
+Java (csvmultitool): 8.536s
+Java is 16.46x faster
+------------------------------
+
+--- Summary: Full Extraction ---
+Python (csvkit): 101.599s
+Java (csvmultitool): 22.350s
+Java is 4.55x faster
+--------------------------------
 ```
 
 You see? The Java implementation using Apache POI is significantly faster, doing the job in a fraction of the time.
